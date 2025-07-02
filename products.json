@@ -1,0 +1,13 @@
+{
+    "products": [
+        {
+            "name": "ASUS - ROG Zephyrus G14 14 OLED 3K 120Hz Gaming Laptop",
+            "target_price": 1000.0,
+            "sites": [
+                {
+                    "url": "https://www.bestbuy.com/site/asus-rog-zephyrus-g14-14-oled-3k-120hz-gaming-laptop-amd-ryzen-9-8945hs-16gb-lpddr5x-nvidia-geforce-rtx-4060-1tb-ssd-platinum-white/6570270.p?skuId=6570270"
+                }
+            ]
+        }
+    ]
+}
