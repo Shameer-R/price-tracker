@@ -1,3 +1,4 @@
+import pytest
 from src.main import get_website_name_from_url
 
 # Tests for get_website_name_from_url function
@@ -12,3 +13,10 @@ def test_get_walmart_from_url():
     
 def test_get_amazon_from_url():
     assert get_website_name_from_url("https://www.amazon.com/CyberPowerPC-i5-13400F-GeForce-Windows-GXiVR8060A24/dp/B0DCMPRRFD/ref=asc_df_B0DCMPRRFD?mcid=4b6eb29325c138bca30ca43035efd8ba&hvocijid=15788773264263093910-B0DCMPRRFD-&hvexpln=73&tag=hyprod-20&linkCode=df0&hvadid=721245378154&hvpos=&hvnetw=g&hvrand=15788773264263093910&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9032154&hvtargid=pla-2281435179978&th=1") == "Amazon"
+    
+def test_unknown_website_from_url():
+    website_url = "https://github.com/ridgethebridge/pEYEthon"
+    
+    with pytest.raises(ValueError) as exc_info:
+        get_website_name_from_url(website_url)
+    assert str(exc_info.value) == f"Invalid Website URL: {website_url}"

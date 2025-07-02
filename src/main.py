@@ -7,3 +7,5 @@ def get_website_name_from_url(website_url):
         return "Walmart"
     elif "https://www.amazon.com" in website_url:
         return "Amazon"
+    else:
+        raise ValueError(f"Invalid Website URL: {website_url}")
