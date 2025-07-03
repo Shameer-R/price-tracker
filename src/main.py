@@ -37,6 +37,17 @@ def check_if_product_exists_in_database(connection, product_name):
     
     return result is not None
 
+def check_if_website_exists_in_database(connection, website_name):
+    cursor = connection.cursor()
+    
+    validation_query = "SELECT 1 FROM website WHERE name = %s"
+    
+    cursor.execute(validation_query, (website_name,))
+    
+    result = cursor.fetchone()
+    
+    return result is not None
+
 def convert_price_tag_to_string(price_tag):
     price_tag = price_tag.replace("$", "")
     price_tag = price_tag.replace(",", "")
@@ -71,6 +82,26 @@ def get_product_price_from_url(website_url):
         
         return float(price_text)
     
+# Make sure websites are already in database
+def handle_websites(product_list):
+    
+    connection = connect_to_database()
+
+    for product in product_list:
+        for site in product['sites']:
+            website_url = site['url']
+            website_name = get_website_name_from_url(website_url)
+            
+            if check_if_website_exists_in_database(connection, website_name) == True:
+                print(f"{website_name} already exists in Database")
+            elif check_if_website_exists_in_database(connection, website_name) == False:
+                cursor = connection.cursor()
+                
+                insert_website_query = ("INSERT INTO website (name) VALUES (%s);")
+                cursor.execute(insert_website_query, (website_name,))
+                
+                connection.commit()
+                
 # Run tasks on each product
 def handle_product(product):
     
@@ -81,16 +112,24 @@ def handle_product(product):
     product_sites = product['sites']
     
     if check_if_product_exists_in_database(connection, product_name) == True:
-        print(f"{product_name} does not exist in database")
+        print(f"{product_name} already exists in database")
     elif check_if_product_exists_in_database(connection, product_name) == False:
         print(f"{product_name} does not exist in database")
         
-    
+        cursor = connection.cursor()
+        
+        insert_product_query = ("INSERT INTO product (name) VALUES (%s);")
+        cursor.execute(insert_product_query, (product_name,))
+        
+        connection.commit()
+        
 if __name__ == "__main__":
     with open(CONFIG_PATH, 'r') as f:
         parsed_json = json.load(f)
         
     product_list = parsed_json['products']
+    
+    handle_websites(product_list)
     
     for product in product_list:
         handle_product(product)
