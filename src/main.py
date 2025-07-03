@@ -11,8 +11,6 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT_DIR / 'products.json'
 SCHEMA_PATH = ROOT_DIR / 'sql' / 'schema.sql'
 
-
-
 def connect_to_database():
     try:
         connection = psycopg2.connect(DATABASE_URL)
@@ -27,6 +25,17 @@ def connect_to_database():
         return connection            
     except Exception as e:
         print(f"Failure to connect to database. Error: {e}")
+        
+def check_if_product_exists_in_database(connection, product_name):
+    cursor = connection.cursor()
+    
+    validation_query = "SELECT 1 FROM product WHERE name = %s"
+    
+    cursor.execute(validation_query, (product_name,))
+    
+    result = cursor.fetchone()
+    
+    return result is not None
 
 def convert_price_tag_to_string(price_tag):
     price_tag = price_tag.replace("$", "")
@@ -64,14 +73,20 @@ def get_product_price_from_url(website_url):
     
 # Run tasks on each product
 def handle_product(product):
+    
+    connection = connect_to_database()
+    
     product_name = product['name']
     product_target_price = product['target_price']
     product_sites = product['sites']
-    pass
+    
+    if check_if_product_exists_in_database(connection, product_name) == True:
+        print(f"{product_name} does not exist in database")
+    elif check_if_product_exists_in_database(connection, product_name) == False:
+        print(f"{product_name} does not exist in database")
+        
     
 if __name__ == "__main__":
-    connection = connect_to_database()
-        
     with open(CONFIG_PATH, 'r') as f:
         parsed_json = json.load(f)
         
