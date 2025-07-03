@@ -1,5 +1,7 @@
 import pytest
 from src.main import get_website_name_from_url
+from src.main import get_product_price_from_url
+from src.main import convert_price_tag_to_string
 
 # Tests for get_website_name_from_url function
 def test_get_best_buy_from_url():
@@ -20,3 +22,10 @@ def test_unknown_website_from_url():
     with pytest.raises(ValueError) as exc_info:
         get_website_name_from_url(website_url)
     assert str(exc_info.value) == f"Invalid Website URL: {website_url}"
+    
+def test_get_best_buy_product_price_from_url():
+    assert get_product_price_from_url("https://www.bestbuy.com/site/asus-rog-zephyrus-g14-14-oled-3k-120hz-gaming-laptop-amd-ryzen-9-8945hs-16gb-lpddr5x-nvidia-geforce-rtx-4060-1tb-ssd-platinum-white/6570270.p?skuId=6570270") == 1599.99
+    
+# Tests for helper functions
+def test_convert_price_tag_to_string():
+    assert convert_price_tag_to_string("$1,599.99") == 1599.99
