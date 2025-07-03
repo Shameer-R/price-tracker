@@ -48,6 +48,44 @@ def check_if_website_exists_in_database(connection, website_name):
     
     return result is not None
 
+def check_if_price_was_updated_today(connection, product_id, website_id):
+    
+    cursor = connection.cursor()
+    
+    select_query = """
+    SELECT price_id FROM price_history
+    WHERE product_id = %s AND website_id = %s AND timestamp = CURRENT_DATE;
+    """
+    
+    cursor.execute(select_query, (product_id, website_id,))
+    
+    result = cursor.fetchone()
+    
+    return result is not None
+    
+
+def get_product_id_from_product_name(connection, product_name):
+    cursor = connection.cursor()
+    
+    select_query = "SELECT product_id FROM product WHERE name = %s"
+    
+    cursor.execute(select_query, (product_name,))
+    
+    result = cursor.fetchone()
+    
+    return result[0]
+
+def get_website_id_from_website_name(connection, website_name):
+    cursor = connection.cursor()
+    
+    select_query = "SELECT website_id FROM website WHERE name = %s"
+    
+    cursor.execute(select_query, (website_name,))
+    
+    result = cursor.fetchone()
+    
+    return result[0]
+
 def convert_price_tag_to_string(price_tag):
     price_tag = price_tag.replace("$", "")
     price_tag = price_tag.replace(",", "")
@@ -101,7 +139,7 @@ def handle_websites(product_list):
                 cursor.execute(insert_website_query, (website_name,))
                 
                 connection.commit()
-                
+                                
 # Run tasks on each product
 def handle_product(product):
     
@@ -123,6 +161,42 @@ def handle_product(product):
         
         connection.commit()
         
+    product_id = get_product_id_from_product_name(connection, product_name)
+    
+    for site in product_sites:
+        site_url = site['url']
+        site_name = get_website_name_from_url(site_url)
+        site_id = get_website_id_from_website_name(connection, site_name)
+        current_price_from_site = get_product_price_from_url(site_url)
+        
+        cursor = connection.cursor()
+        
+        if check_if_price_was_updated_today(connection, product_id, site_id) == True:
+            print("Price was already updated today. Overwriting.")
+            
+            update_price_history_query = """
+                UPDATE price_history
+                SET price = %s
+                WHERE product_id = %s AND website_id = %s AND timestamp = CURRENT_DATE
+            """
+
+            cursor.execute(update_price_history_query, (current_price_from_site, product_id, site_id))
+            
+            connection.commit()
+            
+        elif check_if_price_was_updated_today(connection, product_id, site_id) == False:
+            print("Price was not updated. Creating new entry.")
+            
+            insert_price_history_query = """
+                INSERT INTO price_history (product_id, website_id, price) 
+                VALUES (%s, %s, %s);
+            """
+        
+            cursor.execute(insert_price_history_query, (product_id, site_id, current_price_from_site,))
+        
+            connection.commit()
+
+    
 if __name__ == "__main__":
     with open(CONFIG_PATH, 'r') as f:
         parsed_json = json.load(f)
