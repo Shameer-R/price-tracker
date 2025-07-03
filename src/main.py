@@ -1,14 +1,21 @@
 import os
+from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 import requests
 import json
 from pathlib import Path
 import psycopg2
+import smtplib
+from email.message import EmailMessage
 
-DATABASE_URL = os.environ['DATABASE_URL']
+load_dotenv()
+
+DATABASE_URL = os.getenv('DATABASE_URL')
+GMAIL_APP_PASSWORD = os.getenv('GMAIL_APP_PASSWORD')
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-CONFIG_PATH = ROOT_DIR / 'products.json'
+PRODUCT_JSON_PATH = ROOT_DIR / 'products.json'
+CONFIG_PATH = ROOT_DIR / 'config.json'
 SCHEMA_PATH = ROOT_DIR / 'sql' / 'schema.sql'
 
 def connect_to_database():
@@ -139,7 +146,18 @@ def handle_websites(product_list):
                 cursor.execute(insert_website_query, (website_name,))
                 
                 connection.commit()
-                                
+                
+PricesList = []
+                
+def product_below_target_price(product_name, website_name, price):
+    product_dictionary = {
+        "product_name": product_name,
+        "website_name": website_name,
+        "price": price,
+    }
+    
+    PricesList.append(product_dictionary)
+
 # Run tasks on each product
 def handle_product(product):
     
@@ -195,10 +213,30 @@ def handle_product(product):
             cursor.execute(insert_price_history_query, (product_id, site_id, current_price_from_site,))
         
             connection.commit()
+            
+        if current_price_from_site <= product_target_price:
+            product_below_target_price(product_name, site_name, current_price_from_site)
+            
+def send_email_from_bot(email_to, body):
+    EMAIL_ADDRESS = "shampricetrackerbot@gmail.com"
+    PASSWORD = GMAIL_APP_PASSWORD
+    
+    msg = EmailMessage()
+    msg['Subject'] = "A product you're interested in has gone on sale!"
+    msg['From'] = EMAIL_ADDRESS
+    msg['To'] = email_to
+    
+    msg.set_content(body)
+    
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        smtp.login(EMAIL_ADDRESS, PASSWORD)
+        smtp.send_message(msg)
+        print(f"Email sent to {email_to}")
+
 
     
 if __name__ == "__main__":
-    with open(CONFIG_PATH, 'r') as f:
+    with open(PRODUCT_JSON_PATH, 'r') as f:
         parsed_json = json.load(f)
         
     product_list = parsed_json['products']
@@ -207,3 +245,24 @@ if __name__ == "__main__":
     
     for product in product_list:
         handle_product(product)
+    
+    if len(PricesList) > 0:
+        
+        message_string = ""
+        
+        for product_dict in PricesList:
+            product_name = product_dict['product_name']
+            website_name = product_dict['website_name']
+            price = product_dict['price']
+            
+            current_text = f"\n- {product_name} is for sale on {website_name} going for ${price}!\n"
+            message_string += current_text
+            
+        with open(CONFIG_PATH, 'r') as f:
+            config = json.load(f)
+
+        email_list = config.get("emails")
+        
+        for email in email_list:
+            send_email_from_bot(email, message_string)
+    
