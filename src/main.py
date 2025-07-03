@@ -1,7 +1,32 @@
+import os
 from bs4 import BeautifulSoup
 import requests
 import json
 from pathlib import Path
+import psycopg2
+
+DATABASE_URL = os.environ['DATABASE_URL']
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+CONFIG_PATH = ROOT_DIR / 'products.json'
+SCHEMA_PATH = ROOT_DIR / 'sql' / 'schema.sql'
+
+
+
+def connect_to_database():
+    try:
+        connection = psycopg2.connect(DATABASE_URL)
+        cursor = connection.cursor()
+        
+        with open(SCHEMA_PATH, 'r') as f:
+            schema_sql = f.read()
+        
+        cursor.execute(schema_sql)
+        connection.commit()
+
+        return connection            
+    except Exception as e:
+        print(f"Failure to connect to database. Error: {e}")
 
 def convert_price_tag_to_string(price_tag):
     price_tag = price_tag.replace("$", "")
@@ -45,10 +70,9 @@ def handle_product(product):
     pass
     
 if __name__ == "__main__":
-    root_dir = Path(__file__).resolve().parent.parent
-    config_path = root_dir / 'products.json'
-    
-    with open(config_path, 'r') as f:
+    connection = connect_to_database()
+        
+    with open(CONFIG_PATH, 'r') as f:
         parsed_json = json.load(f)
         
     product_list = parsed_json['products']
