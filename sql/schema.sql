@@ -14,5 +14,5 @@ CREATE TABLE IF NOT EXISTS price_history (
     product_id INT NOT NULL REFERENCES product(product_id),
     website_id INT NOT NULL REFERENCES website(website_id),
     price DECIMAL (10, 2) NOT NULL,
-    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    timestamp DATE NOT NULL DEFAULT CURRENT_DATE
 )
