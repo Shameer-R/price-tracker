@@ -121,9 +121,13 @@ def get_product_price_from_url(website_url):
         request_content = requests.get(website_url, headers={'User-Agent': agent}, timeout=3)
         
         soup = BeautifulSoup(request_content.content, 'html5lib')
+                
+        price_tag = soup.find(id="large-customer-price")
         
-        price_tag = soup.find(id="large-customer-price").text.strip()
-        price_text = convert_price_tag_to_string(price_tag)
+        if price_tag is None:
+            raise ValueError(f"Price element not found on page {website_url}")
+        
+        price_text = convert_price_tag_to_string(price_tag.text.strip())
         
         return float(price_text)
     
@@ -149,10 +153,11 @@ def handle_websites(product_list):
                 
 PricesList = []
                 
-def product_below_target_price(product_name, website_name, price):
+def product_below_target_price(product_name, website_name, price, website_url):
     product_dictionary = {
         "product_name": product_name,
         "website_name": website_name,
+        "website_url": website_url,
         "price": price,
     }
     
@@ -215,7 +220,7 @@ def handle_product(product):
             connection.commit()
             
         if current_price_from_site <= product_target_price:
-            product_below_target_price(product_name, site_name, current_price_from_site)
+            product_below_target_price(product_name, site_name, current_price_from_site, site_url)
             
 def send_email_from_bot(email_to, body):
     EMAIL_ADDRESS = "shampricetrackerbot@gmail.com"
@@ -254,8 +259,9 @@ if __name__ == "__main__":
             product_name = product_dict['product_name']
             website_name = product_dict['website_name']
             price = product_dict['price']
+            website_url = product_dict['website_url']
             
-            current_text = f"\n- {product_name} is for sale on {website_name} going for ${price}!\n"
+            current_text = f"\n- {product_name} is for sale on {website_name} going for ${price}! {website_url}\n"
             message_string += current_text
             
         with open(CONFIG_PATH, 'r') as f:
