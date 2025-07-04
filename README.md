@@ -62,7 +62,6 @@ Create a .env file locally (do NOT commit):
 ```
 DATABASE_URL=your_postgres_connection_string
 GMAIL_APP_PASSWORD=your_gmail_app_password
-EMAIL_ADDRESS=your_bot_email_address
 ```
 
 Add products and emails config
